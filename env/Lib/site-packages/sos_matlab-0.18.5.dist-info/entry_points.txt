@@ -1,0 +1,4 @@
+
+[sos_languages]
+MATLAB = sos_matlab.kernel:sos_MATLAB
+Octave = sos_matlab.kernel:sos_MATLAB

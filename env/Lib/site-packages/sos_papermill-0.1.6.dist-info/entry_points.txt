@@ -1,0 +1,3 @@
+
+[papermill.engine]
+sos = sos_papermill.engine:SoSExecutorEngine

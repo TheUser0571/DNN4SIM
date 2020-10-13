@@ -1,0 +1,3 @@
+
+[sos_languages]
+Java = sos_java.kernel:sos_java

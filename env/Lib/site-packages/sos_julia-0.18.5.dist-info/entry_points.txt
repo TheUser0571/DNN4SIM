@@ -1,0 +1,3 @@
+
+[sos_languages]
+Julia = sos_julia.kernel:sos_Julia

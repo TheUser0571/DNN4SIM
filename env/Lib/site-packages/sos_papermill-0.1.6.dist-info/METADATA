@@ -1,0 +1,64 @@
+Metadata-Version: 2.1
+Name: sos-papermill
+Version: 0.1.6
+Summary: SoS extension for papermill
+Home-page: https://github.com/vatlab/sos-papermill
+Author: Bo Peng
+Author-email: bpeng@mdanderson.org
+Maintainer: Bo Peng
+Maintainer-email: bpeng@mdanderson.org
+License: 3-clause BSD
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Console
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Natural Language :: English
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Intended Audience :: Information Technology
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+Requires-Dist: papermill
+Requires-Dist: sos (>=0.20.2)
+Requires-Dist: sos-notebook (>=0.20.4)
+
+[![PyPI version](https://badge.fury.io/py/sos-papermill.svg)](https://badge.fury.io/py/sos-papermill)
+[![Build Status](https://travis-ci.org/vatlab/sos-papermill.svg?branch=master)](https://travis-ci.org/vatlab/sos-papermill)
+
+
+# Papermill engine for SoS Notebook
+
+This is a papermill engine for the batch execution of SoS Polyglot Notebook.
+
+## Installation
+
+```
+pip install sos-papermill
+```
+
+or
+
+```
+conda install sos-papermill -c conda-forge
+```
+if you are using a conda environment.
+
+## Usage
+
+```
+papermill --engine sos [other options]
+```
+
+Note that `parameters` can be defined in either a `SoS` or a subkernel cell but in both cases
+parameters should be passed in Python syntax. Parameters defined in a subkernel will be automatically
+transferred to the subkernel using a `%put` magic.
+
+

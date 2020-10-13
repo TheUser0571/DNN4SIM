@@ -1,0 +1,3 @@
+
+[sos_languages]
+R = sos_r.kernel:sos_R
