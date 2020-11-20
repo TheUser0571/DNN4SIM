@@ -78,13 +78,13 @@ for ii=1:3
     OTFm(:,:,ii,1)=imtranslate(OTF0,kpx(:,ii)');
     OTFm(:,:,ii,2)=imtranslate(OTF0,-kpx(:,ii)');
 end
-rosette = zeros(sz);
+%rosette = zeros(sz);
 % Truncated OTF0
 T_OTF0=zeros([sz,3]);
 if displ, figure; end
 for ii=1:3
     T_OTF0(:,:,ii)=OTF0.*(1-imtranslate(OTF0,2*kpx(:,ii)')).*(1-imtranslate(OTF0,-2*kpx(:,ii)'));
-    rosette(T_OTF0(:,:,ii) > 0) = 1;
+    %rosette(T_OTF0(:,:,ii) > 0) = 1;
     if displ, subplot(1,3,ii);imagesc(T_OTF0(:,:,ii)); axis image; axis off; colormap gray; title(['Orr #',num2str(ii),' Trunc OTF0']); end
 end
 % Oval masks
@@ -93,14 +93,14 @@ if displ, figure; end
 for ii=1:3
     Ovals(:,:,ii,1)=imtranslate(fftshift(OTF).*OTFm(:,:,ii,1),kpx(:,ii)');
     Ovals(:,:,ii,2)=imtranslate(fftshift(OTF).*OTFm(:,:,ii,2),-kpx(:,ii)');
-    rosette(Ovals(:,:,ii,1) > 0) = 1;
-    rosette(Ovals(:,:,ii,2) > 0) = 1;
+    %rosette(Ovals(:,:,ii,1) > 0) = 1;
+    %rosette(Ovals(:,:,ii,2) > 0) = 1;
     if displ
         subplot(2,3,ii);imagesc(Ovals(:,:,ii,1)); axis image; axis off; title(['Orr #',num2str(ii),' Oval #1']);
         subplot(2,3,ii+3);imagesc(Ovals(:,:,ii,2)); axis image; axis off; colormap gray; title(['Orr #',num2str(ii),' Oval #2']);
     end
 end
-figure; imagesc(rosette); axis image; axis off; title('rosette');
+%figure; imagesc(rosette); axis image; axis off; title('rosette');
 %save(['../DNN4SIM_data/rosette_' num2str(sz)], 'rosette');
 % Triangle masks
 Tri=zeros([sz,3]);

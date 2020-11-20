@@ -7,7 +7,7 @@ rng(1)
 addpath Utils/
 %% Parameters
 % -- Sample
-name='0001.png';        % Name of the file containing the object
+name='sim_test_img_2.png';        % Name of the file containing the object
 
 % -- PSF
 lamb=488;                % Illumination wavelength
@@ -32,7 +32,8 @@ displ=2;                 % 0 : only the reconstructed image is displayed
 
 %% Data Generation
 % -- Load image
-x0=double(rgb2gray(imread(name)));x0=x0/max(x0(:));
+%x0=double(rgb2gray(imread(name)));x0=x0/max(x0(:)); % rgb
+x0=double(imread(name));x0=x0/max(x0(:)); % gray
 %load '../DNN4SIM_data/dataset_labels_0_3D-SIM 488.mat';
 %x0 = squeeze(data(1,:,:));
 %x0 = x0(floor(size(x0,1)/2)-255:floor(size(x0,1)/2)+256,floor(size(x0,2)/2)-255:floor(size(x0,2)/2)+256);

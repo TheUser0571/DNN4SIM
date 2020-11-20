@@ -6,9 +6,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from nn import *
+from laploss import LapLoss
 import json
 import os
 import errno
+from pytorch_msssim import ms_ssim, MS_SSIM
 import pytorch_ssim
 
 def get_default_device(id=0):
@@ -78,25 +80,18 @@ def load_dataset(feat_path, lab_path, train_ratio=0.8, batch_size=10, gpu_id=0):
     val_loader = DeviceDataLoader(val_set, get_default_device(gpu_id))
     
     return train_loader, val_loader
-    
-"""
-def accuracy_numpy(outputs, labels):
-    if len(outputs.shape) > 2:
-        outputs = outputs.squeeze()
-        labels = labels.squeeze()
-        acc = []
-        for i in range(outputs.shape[0]):
-            acc.append(ssim(outputs[i], labels[i], dynamic_range=max(outputs[i].max() - outputs[i].min(), labels[i].max() - labels[i].min())))
-        return np.mean(acc)
-    else:
-        return ssim(outputs, labels, dynamic_range=max(outputs.max() - outputs.min(), labels.max() - labels.min()))
-"""
 
-# Custom loss function combingin Smooth L1 Loss with SSIM
+# Custom loss function combining Smooth L1 Loss and SSIM
 def custom_loss(output, target):
     ssim_loss = pytorch_ssim.SSIM()
     sl1l = F.smooth_l1_loss
-    return sl1l(output, target) + 0.01 * (1 - ssim_loss(output, target))
+    return 0.16 * sl1l(output, target) + 0.84 * (1 - ssim_loss(output, target))
+    
+# Custom loss function combining Laplacian Pyramid Loss and L1
+def lap_loss_mix(x, y):
+    lap_loss = LapLoss(max_levels=1, channels=1)
+    l1_loss = F.smooth_l1_loss
+    return lap_loss(x, y) + 0.2 * l1_loss(x, y)
     
 def evaluate(model, val_loader, loss_func=F.smooth_l1_loss):
     with torch.no_grad():
@@ -135,7 +130,7 @@ def accuracy(outputs, labels):
 # If executed as script
 if __name__ == '__main__':
     # Check usage
-    if len(sys.argv) < 7:
+    if len(sys.argv) < 6:
         print("Usage:\n\t>>python train_nn features_path labels_path out_folder batch_size epochs gpu_id (use_pretrained)\n")
         exit()      
     # Process input parameters
@@ -144,11 +139,10 @@ if __name__ == '__main__':
     out_folder = sys.argv[3]
     batch_size = int(sys.argv[4])
     epochs = int(sys.argv[5])
-    gpu_id = int(sys.argv[6])
-    pretrained = False if len(sys.argv) < 8 else True
+    pretrained = False if len(sys.argv) < 7 else True
     
     if pretrained == True:
-        pretrained_path = sys.argv[7]
+        pretrained_path = sys.argv[6]
         print(f'Using pretrained model located at {pretrained_path}.')
     
     # Check if out_folder exists, else create it
@@ -169,18 +163,19 @@ if __name__ == '__main__':
     for id in range(torch.cuda.device_count()):
         print(f'--- Using GPU {id} ---\n')
         print('Loading dataset ...')
-        train_loader, val_loader = load_dataset(features_path, labels_path, 0.8, batch_size, gpu_id)
+        train_loader, val_loader = load_dataset(features_path, labels_path, 0.8, batch_size, id)
         print('Done.')
         
         # Get neural network model 
         model = CUNet()
         if pretrained == True:
-            model.load_state_dict(torch.load(pretrained_path, map_location=get_default_device(gpu_id)))
+            model.load_state_dict(torch.load(pretrained_path, map_location=get_default_device(id)))
         # Move model to GPU
-        model.to(get_default_device(gpu_id))
-        # Perfrom training
+        model.to(get_default_device(id))
+        # Perform training
         try:
-            history = fit(epochs=epochs, lr=0.001, model=model, train_loader=train_loader, val_loader=val_loader, loss_func=custom_loss)
+            history = fit(epochs=epochs, lr=0.002, model=model, train_loader=train_loader, 
+                                                                val_loader=val_loader, loss_func=custom_loss)
             break
         except RuntimeError:
             print(f'Not enough memory on GPU {id} !')

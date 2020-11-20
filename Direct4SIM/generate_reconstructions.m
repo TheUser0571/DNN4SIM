@@ -15,7 +15,7 @@ ph=rand(1,3)*0;            % Phase if set to be random
 a=0.9;                   % Amplitude coefficient of the patterns
 
 % -- Noise
-noiseSNR=20;             % SNR of generated data (dB)
+noiseSNR=35;             % SNR of generated data (dB)
 %% Data generation and reconstruction
 
 fprintf('Reconstructing ...');
@@ -44,13 +44,15 @@ for mat_nb = 0:3
         % -- Data
         y = GenerateSIM4data(x0,patt,OTF,noiseSNR,0);          %  Generate 4-SIM data
         wf = y(:,:,4);
-        wf_data(img_idx, :, :) = (wf + min(min(wf)))/(max(max(wf))-min(min(wf)));
+        wf_data(img_idx, :, :) = max(0, wf);
         % Reconstruction
         [x, pattest] = DirectSIM4(y,OTF,res,Na,lamb,1e-3,0);
-        recons_data(img_idx, :, :) = (x + min(min(x)))/(max(max(x))-min(min(x)));
+        recons_data(img_idx, :, :) = max(0, x);
         
         img_count = img_count + 1;
+        
     end
-    save(['../DNN4SIM_data/DIV2K_recons_' num2str(mat_nb)], 'recons_data');
-    save(['../DNN4SIM_data/DIV2K_wf_' num2str(mat_nb)], 'wf_data');
+    save(['../DNN4SIM_data/DIV2K_recons_snr' num2str(noiseSNR) '_' num2str(mat_nb)], 'recons_data');
+    save(['../DNN4SIM_data/DIV2K_wf_snr' num2str(noiseSNR) '_' num2str(mat_nb)], 'wf_data');
+    fprintf('\nFinished reconstructing!\n');
 end
