@@ -12,6 +12,7 @@ import os
 import errno
 from pytorch_msssim import ms_ssim, MS_SSIM
 import pytorch_ssim
+import math
 
 def get_default_device(id=0):
     """Pick GPU if available, else CPU"""
@@ -55,11 +56,13 @@ def get_train_val(features, labels, train_ratio=0.8, batch_size=10):
     
     features = np.reshape(features, (-1, batch_size, 1, features.shape[1], features.shape[2]))
     labels = np.reshape(labels, (-1, batch_size, 1, labels.shape[1], labels.shape[2]))
-    
+    print(f'Data size: {len(features), features[0].shape[0], features[0].shape[1], features[0].shape[2], features[0].shape[3]}')
+
     n = int(train_ratio*features.shape[0])
     
     train_set = [(torch.FloatTensor(features[i]), torch.FloatTensor(labels[i])) for i in range(n)]
     val_set = [(torch.FloatTensor(features[i]), torch.FloatTensor(labels[i])) for i in range(n, features.shape[0])]
+    print(f'Train length: {len(train_set)}\nValidation length: {len(val_set)}')
     return train_set, val_set
 
 def load_dataset(feat_path, lab_path, train_ratio=0.8, batch_size=10, gpu_id=0):
@@ -99,12 +102,16 @@ def evaluate(model, val_loader, loss_func=F.smooth_l1_loss):
         outputs = [model.validation_step(batch, acc_func=accuracy, loss_func=loss_func) for batch in val_loader]
         return model.validation_epoch_end(outputs)
 
-def fit(epochs, lr, model, train_loader, val_loader, opt_func=torch.optim.Adam, loss_func=F.smooth_l1_loss):
+def fit(epochs, lr, model, train_loader, val_loader, opt_func=torch.optim.Adam, loss_func=F.smooth_l1_loss, id=0):
     print('Starting training')
     history = []
     optimizer = opt_func(model.parameters(), lr)
     for epoch in range(epochs):
         print(f'Running epoch {epoch} ... ', end='\r')
+        # Temporarily save the trained model
+        with open('tmp_model.pt', 'wb') as f:
+            torch.save(model.state_dict(), f)
+            
         # Training Phase 
         model.train()
         train_losses = []
@@ -119,6 +126,12 @@ def fit(epochs, lr, model, train_loader, val_loader, opt_func=torch.optim.Adam, 
         print(f'Running epoch {epoch} ... Done                     ', end='\r')
         # Validation phase
         result = evaluate(model, val_loader, loss_func=loss_func)
+        
+        if result['val_acc'] < 0.01 or math.isnan(result['val_acc']):
+            print(f"Training anomaly detected (val_acc={result['val_acc']}), aborting...")
+            model.load_state_dict(torch.load('tmp_model.pt', map_location=get_default_device(id)))
+            break
+        
         result['train_loss'] = torch.stack(train_losses).mean().item()
         model.epoch_end(epoch, result)
         history.append(result)
@@ -160,6 +173,7 @@ if __name__ == '__main__':
         
     history = None
     model = None
+    structure = 'RCAN'
     for id in range(torch.cuda.device_count()):
         print(f'--- Using GPU {id} ---\n')
         print('Loading dataset ...')
@@ -167,7 +181,10 @@ if __name__ == '__main__':
         print('Done.')
         
         # Get neural network model 
-        model = CUNet()
+        if structure == 'RCAN':
+            model = RCAN(n_feats=64, n_resgroups=3, n_resblocks=5, reduction=16)
+        else:
+            model = CUNet()
         if pretrained == True:
             model.load_state_dict(torch.load(pretrained_path, map_location=get_default_device(id)))
         # Move model to GPU
@@ -175,7 +192,7 @@ if __name__ == '__main__':
         # Perform training
         try:
             history = fit(epochs=epochs, lr=0.002, model=model, train_loader=train_loader, 
-                                                                val_loader=val_loader, loss_func=custom_loss)
+                                                                val_loader=val_loader, loss_func=custom_loss, id=id)
             break
         except RuntimeError:
             print(f'Not enough memory on GPU {id} !')

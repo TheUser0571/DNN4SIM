@@ -15,7 +15,7 @@ ph=rand(1,3)*0;            % Phase if set to be random
 a=0.9;                   % Amplitude coefficient of the patterns
 
 % -- Noise
-noiseSNR=35;             % SNR of generated data (dB)
+noiseSNR=5;             % SNR of generated data (dB)
 %% Data generation and reconstruction
 
 fprintf('Reconstructing ...');
