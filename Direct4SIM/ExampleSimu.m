@@ -7,7 +7,10 @@ rng(1)
 addpath Utils/
 %% Parameters
 % -- Sample
-name='../DNN4SIM_data/sim_test_img_3.png';        % Name of the file containing the object
+test_img_nb = 5;
+name = ['../DNN4SIM_data/sim_test_img_' num2str(test_img_nb) '.png'];        % Name of the file containing the object
+
+
 
 % -- PSF
 lamb=488;                % Illumination wavelength
@@ -23,7 +26,7 @@ ph=rand(1,3)*0;            % Phase if set to be random
 a=0.9;                   % Amplitude coefficient of the patterns
 
 % -- Noise
-noiseSNR=5;             % SNR of generated data (dB)
+noiseSNR=10;             % SNR of generated data (dB)
 
 % -- Other
 displ=2;                 % 0 : only the reconstructed image is displayed
@@ -79,7 +82,7 @@ subplot(1,2,1);imagesc(y(:,:,4)); axis image; axis off; title('WF Image');
 subplot(1,2,2);imagesc(log(1+abs(fftshift(fft2(y(:,:,4)))))); axis image; axis off; title('FFT WF Image');
 
 x = max(0, x);
-imwrite(x,'sim_test_img_2_recons.png')
+imwrite(x,['sim_test_img_' num2str(test_img_nb) '_recons_snr' num2str(noiseSNR) '.png'])
 wf = y(:,:,4);
 wf = max(0,wf);
-imwrite(wf,'sim_test_img_2_wf.png')
+imwrite(wf,['sim_test_img_' num2str(test_img_nb) '_wf_snr' num2str(noiseSNR) '.png'])

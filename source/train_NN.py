@@ -86,9 +86,13 @@ def load_dataset(feat_path, lab_path, train_ratio=0.8, batch_size=10, gpu_id=0):
 
 # Custom loss function combining Smooth L1 Loss and SSIM
 def custom_loss(output, target):
-    ssim_loss = pytorch_ssim.SSIM()
+    ssim_l = pytorch_ssim.SSIM()
     sl1l = F.smooth_l1_loss
-    return 0.16 * sl1l(output, target) + 0.84 * (1 - ssim_loss(output, target))
+    return 0.16 * sl1l(output, target) + 0.84 * (1 - ssim_l(output, target))
+    
+def ssim_loss(output, target):
+    ssim_l = pytorch_ssim.SSIM()
+    return (1 - ssim_l(output, target))
     
 # Custom loss function combining Laplacian Pyramid Loss and L1
 def lap_loss_mix(x, y):
@@ -191,7 +195,7 @@ if __name__ == '__main__':
         model.to(get_default_device(id))
         # Perform training
         try:
-            history = fit(epochs=epochs, lr=0.002, model=model, train_loader=train_loader, 
+            history = fit(epochs=epochs, lr=0.001, model=model, train_loader=train_loader, 
                                                                 val_loader=val_loader, loss_func=custom_loss, id=id)
             break
         except RuntimeError:

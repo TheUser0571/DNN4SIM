@@ -15,12 +15,12 @@ ph=rand(1,3)*0;            % Phase if set to be random
 a=0.9;                   % Amplitude coefficient of the patterns
 
 % -- Noise
-noiseSNR=5;             % SNR of generated data (dB)
+noiseSNR=15;             % SNR of generated data (dB)
 %% Data generation and reconstruction
 
 fprintf('Reconstructing ...');
 img_count = 0;
-for mat_nb = 0:3
+for mat_nb = 0:1
     load(['../DNN4SIM_data/DIV2K_' num2str(mat_nb) '.mat']);
     recons_data = zeros(size(data));
     wf_data = zeros(size(data));
@@ -54,5 +54,7 @@ for mat_nb = 0:3
     end
     save(['../DNN4SIM_data/DIV2K_recons_snr' num2str(noiseSNR) '_' num2str(mat_nb)], 'recons_data');
     save(['../DNN4SIM_data/DIV2K_wf_snr' num2str(noiseSNR) '_' num2str(mat_nb)], 'wf_data');
-    fprintf('\nFinished reconstructing!\n');
+    
 end
+
+fprintf('\nFinished reconstructing!\n');
