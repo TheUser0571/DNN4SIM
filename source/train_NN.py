@@ -1,5 +1,7 @@
-# Usages:
+# Usage:
 # python train_nn.py features_path labels_path out_folder batch_size epochs (pretrained_path)
+
+# Imports
 import sys
 import numpy as np
 import torch
@@ -14,34 +16,35 @@ from pytorch_msssim import ms_ssim, MS_SSIM
 import pytorch_ssim
 import math
 
+# Pick GPU if available, else CPU
 def get_default_device(id=0):
-    """Pick GPU if available, else CPU"""
     if torch.cuda.is_available():
         return torch.device(f'cuda:{id}')
     else:
         return torch.device('cpu')
     
+# Move tensor(s) to chosen device
 def to_device(data, device):
-    """Move tensor(s) to chosen device"""
     if isinstance(data, (list,tuple)):
         return [to_device(x, device) for x in data]
     return data.to(device)
 
+# Wrap a dataloader to move data to a device
 class DeviceDataLoader():
-    """Wrap a dataloader to move data to a device"""
     def __init__(self, dl, device):
         self.dl = dl
         self.device = device
         
     def __iter__(self):
-        """Yield a batch of data after moving it to device"""
+        # Yield a batch of data after moving it to device
         for b in self.dl: 
             yield to_device(b, self.device)
 
     def __len__(self):
-        """Number of batches"""
+        # Number of batches
         return len(self.dl)
-        
+
+# Returns training and validation sets
 def get_train_val(features, labels, train_ratio=0.8, batch_size=10):
     if features.shape[0] != labels.shape[0]:
         raise ValueError('Features and Labels are not of the same size')
@@ -50,6 +53,7 @@ def get_train_val(features, labels, train_ratio=0.8, batch_size=10):
 
     length = features.shape[0]
     
+    # Adjust length to fit batch_size
     if length % batch_size != 0:
         features = features[:-(length % batch_size)]
         labels = labels[:-(length % batch_size)]
@@ -60,11 +64,13 @@ def get_train_val(features, labels, train_ratio=0.8, batch_size=10):
 
     n = int(train_ratio*features.shape[0])
     
+    # Create FloatTensor dataset
     train_set = [(torch.FloatTensor(features[i]), torch.FloatTensor(labels[i])) for i in range(n)]
     val_set = [(torch.FloatTensor(features[i]), torch.FloatTensor(labels[i])) for i in range(n, features.shape[0])]
     print(f'Train length: {len(train_set)}\nValidation length: {len(val_set)}')
     return train_set, val_set
 
+# Loads the dataset with features located at 'feat_path' and labels located at 'lab_path'
 def load_dataset(feat_path, lab_path, train_ratio=0.8, batch_size=10, gpu_id=0):
     # Load data
     features = []
@@ -90,6 +96,7 @@ def custom_loss(output, target):
     sl1l = F.smooth_l1_loss
     return 0.16 * sl1l(output, target) + 0.84 * (1 - ssim_l(output, target))
     
+# SSIM loss
 def ssim_loss(output, target):
     ssim_l = pytorch_ssim.SSIM()
     return (1 - ssim_l(output, target))
@@ -100,12 +107,14 @@ def lap_loss_mix(x, y):
     l1_loss = F.smooth_l1_loss
     return lap_loss(x, y) + 0.2 * l1_loss(x, y)
     
+# Evaluates the DNN at the end of an epoch
 def evaluate(model, val_loader, loss_func=F.smooth_l1_loss):
     with torch.no_grad():
         model.eval()
         outputs = [model.validation_step(batch, acc_func=accuracy, loss_func=loss_func) for batch in val_loader]
         return model.validation_epoch_end(outputs)
 
+# Perform DNN training
 def fit(epochs, lr, model, train_loader, val_loader, opt_func=torch.optim.Adam, loss_func=F.smooth_l1_loss, id=0):
     print('Starting training')
     history = []
@@ -128,6 +137,7 @@ def fit(epochs, lr, model, train_loader, val_loader, opt_func=torch.optim.Adam, 
             optimizer.zero_grad()
             
         print(f'Running epoch {epoch} ... Done                     ', end='\r')
+        
         # Validation phase
         result = evaluate(model, val_loader, loss_func=loss_func)
         
@@ -139,8 +149,10 @@ def fit(epochs, lr, model, train_loader, val_loader, opt_func=torch.optim.Adam, 
         result['train_loss'] = torch.stack(train_losses).mean().item()
         model.epoch_end(epoch, result)
         history.append(result)
-    return history
     
+    return history
+
+# Calculates the accuracy between net outputs and labels
 def accuracy(outputs, labels):
     return pytorch_ssim.ssim(outputs, labels)
     
@@ -150,6 +162,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 6:
         print("Usage:\n\t>>python train_nn features_path labels_path out_folder batch_size epochs gpu_id (use_pretrained)\n")
         exit()      
+    
     # Process input parameters
     features_path = sys.argv[1]
     labels_path = sys.argv[2]
@@ -158,6 +171,7 @@ if __name__ == '__main__':
     epochs = int(sys.argv[5])
     pretrained = False if len(sys.argv) < 7 else True
     
+    # Use pretrained model?
     if pretrained == True:
         pretrained_path = sys.argv[6]
         print(f'Using pretrained model located at {pretrained_path}.')
@@ -170,6 +184,7 @@ if __name__ == '__main__':
             if exc.errno != errno.EEXIST:
                 raise
     
+    # Is a GPU available?
     if torch.cuda.is_available():
         print('Training on GPU.')
     else:
@@ -178,9 +193,12 @@ if __name__ == '__main__':
     history = None
     model = None
     structure = 'RCAN'
+    
+    # Check for a GPU that has enough memory available
     for id in range(torch.cuda.device_count()):
         print(f'--- Using GPU {id} ---\n')
         print('Loading dataset ...')
+        # Load dataset into memory
         train_loader, val_loader = load_dataset(features_path, labels_path, 0.8, batch_size, id)
         print('Done.')
         
@@ -193,6 +211,7 @@ if __name__ == '__main__':
             model.load_state_dict(torch.load(pretrained_path, map_location=get_default_device(id)))
         # Move model to GPU
         model.to(get_default_device(id))
+        
         # Perform training
         try:
             history = fit(epochs=epochs, lr=0.001, model=model, train_loader=train_loader, 
@@ -200,6 +219,8 @@ if __name__ == '__main__':
             break
         except RuntimeError:
             print(f'Not enough memory on GPU {id} !')
+    
+    # Check if the training was done successfully
     if history == None:
         raise RuntimeError('Not enough GPU memory available for training.')
     

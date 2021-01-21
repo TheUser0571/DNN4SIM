@@ -1,6 +1,6 @@
 %--------------------------------------------------------------------------
-%
-%
+% This script is used to generate the test image reconstructions
+% Select the number of the test image and the desired SNR
 %--------------------------------------------------------------------------
 clear;  close all;% clc
 rng(1)
@@ -8,9 +8,7 @@ addpath Utils/
 %% Parameters
 % -- Sample
 test_img_nb = 5;
-name = ['../DNN4SIM_data/sim_test_img_' num2str(test_img_nb) '.png'];        % Name of the file containing the object
-
-
+name = ['../DNN4SIM_data/sim_test_img_' num2str(test_img_nb) '.png']; % Name of the file containing the object
 
 % -- PSF
 lamb=488;                % Illumination wavelength
@@ -37,9 +35,13 @@ displ=2;                 % 0 : only the reconstructed image is displayed
 % -- Load image
 %x0=double(rgb2gray(imread(name)));x0=x0/max(x0(:)); % rgb
 x0=double(imread(name));x0=x0/max(x0(:)); % gray
-%load '../DNN4SIM_data/dataset_labels_0_3D-SIM 488.mat';
-%x0 = squeeze(data(1,:,:));
-%x0 = x0(floor(size(x0,1)/2)-255:floor(size(x0,1)/2)+256,floor(size(x0,2)/2)-255:floor(size(x0,2)/2)+256);
+% When using a .mat file
+%{
+load '../DNN4SIM_data/dataset_labels_0_3D-SIM 488.mat';
+x0 = squeeze(data(1,:,:));
+x0 = x0(floor(size(x0,1)/2)-255:floor(size(x0,1)/2)+256,floor(size(x0,2)/2)-255:floor(size(x0,2)/2)+256);
+%}
+
 sz=size(x0);
 
 % -- PSF
@@ -81,6 +83,7 @@ figure;
 subplot(1,2,1);imagesc(y(:,:,4)); axis image; axis off; title('WF Image');
 subplot(1,2,2);imagesc(log(1+abs(fftshift(fft2(y(:,:,4)))))); axis image; axis off; title('FFT WF Image');
 
+% Save generated images
 x = max(0, x);
 imwrite(x,['sim_test_img_' num2str(test_img_nb) '_recons_snr' num2str(noiseSNR) '.png'])
 wf = y(:,:,4);

@@ -1,6 +1,6 @@
 %--------------------------------------------------------------------------
-%
-%
+% This script is used to generate the reconstruction from a real SIM image
+% Adjust the PSF parameters to the corresponding image parameters
 %--------------------------------------------------------------------------
 clear;  close all;% clc
 addpath Utils/
